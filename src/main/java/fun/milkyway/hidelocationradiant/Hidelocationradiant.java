@@ -108,6 +108,9 @@ public final class Hidelocationradiant extends JavaPlugin implements CommandExec
     @Override
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
         if (sender instanceof Player player) {
+            if (!player.hasPermission("hl.spawn")) {
+                return false;
+            }
             spawnLocation = player.getLocation();
             configuration.set("spawnlocation", spawnLocation);
             try {
