@@ -1,0 +1,7 @@
+name: HidelocationRadiant
+version: '${project.version}'
+main: fun.milkyway.hidelocationradiant.Hidelocationradiant
+api-version: 1.18
+commands:
+  hlspawn:
+    description: Sets hidelocation spawn
