@@ -2,6 +2,8 @@ name: HidelocationRadiant
 version: '${project.version}'
 main: fun.milkyway.hidelocationradiant.Hidelocationradiant
 api-version: 1.18
+depend:
+  - BaronessAuth
 commands:
   hlspawn:
     description: Sets hidelocation spawn
