@@ -16,6 +16,9 @@ import ru.baronessdev.paid.auth.api.events.AuthPlayerLoginEvent;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.HashSet;
+import java.util.Set;
+import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -31,8 +34,12 @@ public final class Hidelocationradiant extends JavaPlugin implements CommandExec
     private FileConfiguration locationsConfigFile;
     private File locationsFile;
 
+    private Set<UUID> authorizedPlayers;
+
     @Override
     public void onEnable() {
+        authorizedPlayers = new HashSet<>();
+
         executorService = Executors.newSingleThreadExecutor();
         File dataFolder = getDataFolder();
 
@@ -81,6 +88,9 @@ public final class Hidelocationradiant extends JavaPlugin implements CommandExec
     @EventHandler(ignoreCancelled = true)
     public void onPlayerQuit(PlayerQuitEvent event) {
         Player player = event.getPlayer();
+        if (!authorizedPlayers.contains(player.getUniqueId())) {
+            return;
+        }
         Location location = event.getPlayer().getLocation().clone();
         executorService.submit(() -> {
             locationsConfigFile.set(player.getUniqueId().toString(), location);
@@ -91,6 +101,7 @@ public final class Hidelocationradiant extends JavaPlugin implements CommandExec
             }
         });
         player.teleport(spawnLocation);
+        authorizedPlayers.remove(player.getUniqueId());
     }
 
     @EventHandler(ignoreCancelled = true)
@@ -103,6 +114,7 @@ public final class Hidelocationradiant extends JavaPlugin implements CommandExec
                 },1);
             }
         });
+        authorizedPlayers.add(player.getUniqueId());
     }
 
     @Override
