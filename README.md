@@ -1,4 +1,5 @@
 # HidelocationRadiant
+
 Addon for BAuth
 
 ### Commands:
