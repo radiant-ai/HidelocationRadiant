@@ -12,18 +12,20 @@ import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.plugin.java.JavaPlugin;
+import org.jetbrains.annotations.NotNull;
 import ru.baronessdev.paid.auth.api.events.AuthPlayerLoginEvent;
 
 import java.io.File;
 import java.io.IOException;
 import java.util.HashSet;
+import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
-public final class Hidelocationradiant extends JavaPlugin implements CommandExecutor, Listener {
+public final class HideLocationRadiant extends JavaPlugin implements CommandExecutor, Listener {
 
     private ExecutorService executorService;
 
@@ -36,6 +38,7 @@ public final class Hidelocationradiant extends JavaPlugin implements CommandExec
 
     private Set<UUID> authorizedPlayers;
 
+    @SuppressWarnings("ResultOfMethodCallIgnored")
     @Override
     public void onEnable() {
         authorizedPlayers = new HashSet<>();
@@ -48,27 +51,15 @@ public final class Hidelocationradiant extends JavaPlugin implements CommandExec
         }
 
         locationsFile = new File(dataFolder, "logoutlocations.yml");
-
-        if (locationsFile.exists()) {
-            locationsConfigFile = YamlConfiguration.loadConfiguration(locationsFile);
-        }
-        else {
-            locationsConfigFile = new YamlConfiguration();
-        }
+        locationsConfigFile = YamlConfiguration.loadConfiguration(locationsFile);
 
         spawnLocation = null;
 
         configFile = new File(dataFolder, "config.yml");
+        configuration = YamlConfiguration.loadConfiguration(configFile);
+        spawnLocation = configuration.getLocation("spawnlocation");
 
-        if (configFile.exists()) {
-            configuration = YamlConfiguration.loadConfiguration(configFile);
-            spawnLocation = configuration.getLocation("spawnlocation");
-        }
-        else {
-            configuration = new YamlConfiguration();
-        }
-
-        getCommand("hlspawn").setExecutor(this);
+        Objects.requireNonNull(getCommand("hlspawn")).setExecutor(this);
         getServer().getPluginManager().registerEvents(this, this);
     }
 
@@ -107,31 +98,28 @@ public final class Hidelocationradiant extends JavaPlugin implements CommandExec
     @EventHandler(ignoreCancelled = true)
     public void onPlayerAuthorize(AuthPlayerLoginEvent event) {
         Player player = event.getPlayer();
-        CompletableFuture.supplyAsync(() -> locationsConfigFile.getLocation(player.getUniqueId().toString()), executorService).thenAccept(location -> {
-            if (location != null) {
-                Bukkit.getScheduler().runTaskLater(this, () -> {
-                    player.teleportAsync(location);
-                },1);
-            }
-        });
+        CompletableFuture
+                .supplyAsync(() -> locationsConfigFile.getLocation(player.getUniqueId().toString()), executorService)
+                .thenAccept(location -> {
+                    if (location != null) {
+                        Bukkit.getScheduler().runTaskLater(this, () -> player.teleportAsync(location), 1);
+                    }
+                });
         authorizedPlayers.add(player.getUniqueId());
     }
 
     @Override
-    public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
-        if (sender instanceof Player player) {
-            if (!player.hasPermission("hl.spawn")) {
-                return false;
-            }
-            spawnLocation = player.getLocation();
-            configuration.set("spawnlocation", spawnLocation);
-            try {
-                configuration.save(configFile);
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
-            sender.sendMessage("Позиция спавна установлена.");
+    public boolean onCommand(@NotNull CommandSender sender, @NotNull Command command, @NotNull String label, String[] args) {
+        if (!(sender instanceof Player)) return true;
+        Player player = (Player) sender;
+        spawnLocation = player.getLocation();
+        configuration.set("spawnlocation", spawnLocation);
+        try {
+            configuration.save(configFile);
+        } catch (IOException e) {
+            e.printStackTrace();
         }
-        return false;
+        sender.sendMessage("Позиция спавна установлена.");
+        return true;
     }
 }
